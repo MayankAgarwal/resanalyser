@@ -10,6 +10,9 @@
 # Licence:     Creative Commons Attribution-ShareAlike 3.0 Unported License.
 #-------------------------------------------------------------------------------
 
+# Want to join in on the development? Great!
+# Email me - ashishnitinpatil@gmail.com
+
 IMPORTANT -
 # The college publicly displays the results which is not quite right.
 # It is a humble request to not publish the result findings on public platforms.
