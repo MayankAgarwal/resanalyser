@@ -20,6 +20,7 @@ latest_term = ['AUTUMN 2012','RE-EXAM AUTUMN 2012']
 # Global Databases & required variables -->
 
 result_file_addresses = []
+# Following automatically takes in files from the 'Result' directory & adds them for analysis
 for res_file in os.listdir(os.path.join(os.getcwd(),'Result')):
     result_file_addresses.append(os.path.join(os.getcwd(),'Result',res_file))
 #result_file_addresses = ["G:\Study\Programming\Py\Result analysis\testing3.txt"]
@@ -30,6 +31,7 @@ terms = ['SPRING','AUTUMN','RE-EXAM','SUMMER']
 
 # The Main function --> (to give all the pretty Command Line Interface like feel)
 def main():
+    ''' Firstly, we take in the result files, check if they are good. Then parse & later analyse them'''
     global result_file, result_file_addresses
     # Welcome Screen
     print(" \n\tResult Analyser by !mmorta!\
@@ -60,19 +62,24 @@ def main():
     '''print("\n\t\tAnalysis Options -\
             \n\t1. Get Student Specific Details\
             \n\t2. Get Course Specific Details")'''
-
+    # Following are a few examples... Uncomment them to see the real magic! :)
+    
     Analyser.All_Courses(printify=True,alphabetically=True,serial=True,terms=True)
+    
 ##    marklist = Analyser.Make_Marklist(course='MINI PROJECT')
 ##    marklist = Analyser.Make_Marklist(course='MINI PROJECT',names=True)
 ##    Analyser.Mean_Deviation(marklist,printify=True)
 ##    Analyser.Ranking(marklist,printify=True)
+
 ##    marklist = Analyser.Make_Marklist(course='COMMUNICATION SKILLS',course_term='AUTUMN 2010',names=True)
 ##    Analyser.Ranking(marklist,printify=True)
 ##    Analyser.Mean_Deviation(marklist,printify=True)
 ##    Analyser.Gradify(marklist,printify=True)
 ##    Analyser.Gradify(marklist,printify=True,cumulative=True)
+
 ##    Analyser.Individual_Record('BT10CIV059',printify=True)
 ##    marklist = Analyser.Make_Marklist(batch='BT10',term='AUTUMN 2010',names=True,sg=True)
+
     marklist = Analyser.Make_Marklist(branch='COMPUTER SCIENCE ENGINEERING',batch='BT10',cg=True,names=True)
     Analyser.Gradify(marklist,printify=True)
     Analyser.Ranking(marklist,printify=True)
@@ -82,7 +89,7 @@ def main():
 ##        if database[roll]['Stud Type'] == 'Super Senior':
 ##            print(database[roll]['Name'])
 ##            print(database[roll])
-	input("\n\tEnter to exit..."
+    input("\n\tEnter to exit...")
     # End of main()...
 
 # Parsing stuff! -->
@@ -90,6 +97,10 @@ def main():
 # to understand the PDF_Parser function properly.
 
 # Nasty name issues...
+''' The PDF is doomed. Oops that is VNIT I suppose. Anyways, the PDF data is very very crude
+and to make it look good & be so, I prettify things that are nasty. You can see below what it
+does, these dicts are there to replace stuff so that our database is intact & nice & free from
+repetitions & other name issues.'''
 general_names_issues = {'SPORTS / YOGA / LIBRARY / NCC (--)':'SPORTS YOGA LIBRARY NCC',
                         'SPORTS/YOGA/LIBRARY/NCC (--)':'SPORTS YOGA LIBRARY NCC',
                         'SPORTS / YOGA/ LIBRARY/ NCC (AU)':'SPORTS YOGA LIBRARY NCC',
