@@ -63,9 +63,9 @@ def main():
             \n\t1. Get Student Specific Details\
             \n\t2. Get Course Specific Details")'''
     # Following are a few examples... Uncomment them to see the real magic! :)
-    
+
     Analyser.All_Courses(printify=True,alphabetically=True,serial=True,terms=True)
-    
+
 ##    marklist = Analyser.Make_Marklist(course='MINI PROJECT')
 ##    marklist = Analyser.Make_Marklist(course='MINI PROJECT',names=True)
 ##    Analyser.Mean_Deviation(marklist,printify=True)
@@ -302,7 +302,7 @@ def PDF_Parser(file):
                     database[cur_roll] = all_details
                 else: # Requirement for the pro 2 page long grade cards of VIPs
                     for each_term in database[cur_roll]['Records']:
-                        all_details[each_term] = database[cur_roll]['Records'][each_term]
+                        all_details['Records'][each_term] = database[cur_roll]['Records'][each_term]
                     database[cur_roll] = all_details
                 break
             cur_line = file.readline()
