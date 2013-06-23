@@ -5,9 +5,7 @@
 #
 # Created:     11/05/2013
 #
-# Copyright:   (c) Asis 2013
-#
-# Licence:     Creative Commons Attribution-ShareAlike 3.0 Unported License.
+# Licence:     Creative Commons Attribution 3.0 Unported License.
 #-------------------------------------------------------------------------------
 
 # Want to join in on the development? Great!
@@ -15,7 +13,6 @@
 
 IMPORTANT -
 # The college publicly displays the results which is not quite right.
-# It is a humble request to not publish the result findings on public platforms.
 # Not everyone is as open as one wants to be. Respect that. Please.
 
 Notes -
