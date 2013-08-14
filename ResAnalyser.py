@@ -1,4 +1,5 @@
-﻿#-------------------------------------------------------------------------------
+﻿#!/usr/bin/env python
+#-------------------------------------------------------------------------------
 # Name:        Result Analyser (Version 2.0)
 #
 # Author:      Asis aka !mmorta!
@@ -10,12 +11,12 @@
 # Licence:     Creative Commons Attribution-ShareAlike 3.0 Unported License.
 #-------------------------------------------------------------------------------
 
-# Python version 3 or more neeeded!!!
+
 # Imports from Python
-import os, re, sys
+import os, re, sys, json
 
 # ATTENTION!!! UPDATE THIS EVERY TERM!!!
-latest_term = ['AUTUMN 2012','RE-EXAM AUTUMN 2012']
+latest_terms = ['2013 SPRING','2013 SPRING RE-EXAM']
 
 # Global Databases & required variables -->
 
@@ -26,17 +27,17 @@ for res_file in os.listdir(os.path.join(os.getcwd(),'Result')):
 #result_file_addresses = ["G:\Study\Programming\Py\Result analysis\testing3.txt"]
 database = {} # For individual student data storing
 course_data = {} # For record keeping of every course for every sem
-grades = {'AA':10,'AB':9,'BB':8,'BC':7,'CC':6,'CD':5,'DD':4,'W':0,'FF':0,'SS':0}
-terms = ['SPRING','AUTUMN','RE-EXAM','SUMMER']
+department_data = {} # For record keeping of students in each department & cur_cg
+grades = {'AA':10,'AB':9,'BB':8,'BC':7,'CC':6,'CD':5,'DD':4,'W':0,'FF':0,'SS':10}
+terms = ['SPRING','AUTUMN','RE-EXAM','SUMMER','WINTER']
 
 # The Main function --> (to give all the pretty Command Line Interface like feel)
 def main():
-    ''' Firstly, we take in the result files, check if they are good. Then parse & later analyse them'''
+    ''' Firstly, we take in the result files/addresses, check if they are good. Then parse & later analyse them'''
     global result_file, result_file_addresses
     # Welcome Screen
     print(" \n\tResult Analyser by !mmorta!\
-            \n\tPython Library for analysing result (PDF Parser with Analyser)\
-            \n\tAsk !mmorta! for Source Code!!")
+            \n\tPython Library for analysing result (PDF Parser with Analyser)")
     # Take in the address of the result file
     if not result_file_addresses:
         result_file_addresses = [input("\n\tAddress of the result file (e.g. C:\downloads\civ.pdf)")]
@@ -48,48 +49,26 @@ def main():
             print("\n\tUnable to open the file!\n")
             result_file = None
             print("Exiting...")
-            sys.exit(1) #Bad exit
+            sys.exit(1) # Bad exit
 
         # File address is correct
-        print("\n\tAddress %s seems correct...File Ready..."%result_file_addr)
+        print("\n\tAddress %s seems correct..."%result_file_addr)
 
-        print("\tProcessing result file %s...Please wait..."%os.path.basename(result_file_addr))
+        print("\tProcessing result file %s..."%os.path.basename(result_file_addr))
 
         # Everything seems fine so just parse the file & extract the reqd data...
         PDF_Parser(result_file)
-
-    # Analysis Options
-    '''print("\n\t\tAnalysis Options -\
-            \n\t1. Get Student Specific Details\
-            \n\t2. Get Course Specific Details")'''
-    # Following are a few examples... Uncomment them to see the real magic! :)
-
-    Analyser.All_Courses(printify=True,alphabetically=True,serial=True,terms=True)
-
-##    marklist = Analyser.Make_Marklist(course='MINI PROJECT')
-##    marklist = Analyser.Make_Marklist(course='MINI PROJECT',names=True)
-##    Analyser.Mean_Deviation(marklist,printify=True)
-##    Analyser.Ranking(marklist,printify=True)
-
-##    marklist = Analyser.Make_Marklist(course='COMMUNICATION SKILLS',course_term='AUTUMN 2010',names=True)
-##    Analyser.Ranking(marklist,printify=True)
-##    Analyser.Mean_Deviation(marklist,printify=True)
-##    Analyser.Gradify(marklist,printify=True)
-##    Analyser.Gradify(marklist,printify=True,cumulative=True)
-
-##    Analyser.Individual_Record('BT10CIV059',printify=True)
-##    marklist = Analyser.Make_Marklist(batch='BT10',term='AUTUMN 2010',names=True,sg=True)
-
-    marklist = Analyser.Make_Marklist(branch='COMPUTER SCIENCE ENGINEERING',batch='BT10',cg=True,names=True)
-    Analyser.Gradify(marklist,printify=True)
-    Analyser.Ranking(marklist,printify=True)
-
-##    # Super Senior data...
-##    for roll in database:
-##        if database[roll]['Stud Type'] == 'Super Senior':
-##            print(database[roll]['Name'])
-##            print(database[roll])
-    input("\n\tEnter to exit...")
+        result_file.close()
+    # Write the data to files so we dont have to redo so much so often (if at all)
+    g1 = open(os.path.join(os.getcwd(),'database.txt'),'w')
+    g2 = open(os.path.join(os.getcwd(),'course_data.txt'),'w')
+    g3 = open(os.path.join(os.getcwd(),'department_data.txt'),'w')
+    g1.write(json.dumps(database))
+    g2.write(json.dumps(course_data))
+    g3.write(json.dumps(department_data))
+    g1.close()
+    g2.close()
+    g3.close()
     # End of main()...
 
 # Parsing stuff! -->
@@ -106,7 +85,8 @@ general_names_issues = {'SPORTS / YOGA / LIBRARY / NCC (--)':'SPORTS YOGA LIBRAR
                         'SPORTS / YOGA/ LIBRARY/ NCC (AU)':'SPORTS YOGA LIBRARY NCC',
                         'SPORTS / YOGA / LIBRARY / NCC (AU)':'SPORTS YOGA LIBRARY NCC',
                         '& REUSE   \(DE\)':'INDUSTRIAL WASTEWATER TREATMENT, RECYCLE & REUSE',
-                        'ENGINEERING   \(DE\)':'RAILWAY, AIRPORT, PORTS & HARBOR ENGINEERING'}
+                        'ENGINEERING   \(DE\)':'RAILWAY, AIRPORT, PORTS & HARBOR ENGINEERING',
+                        'ENGINEERING   \(DC\)':'INTRODUCTION TO MATERIALS SCIENCE AND ENGINEERING'}
 
 duplication_issues = {'BUILDING DESIGN AND DRAWING':'BUILDING DESIGN DRAWING',
                       'COMMUNICATION SKILL':'COMMUNICATION SKILLS',
@@ -114,19 +94,80 @@ duplication_issues = {'BUILDING DESIGN AND DRAWING':'BUILDING DESIGN DRAWING',
                       'MATHEMATICS - I':'MATHEMATICS I',
                       'MINI PROJECT - I':'MINI PROJECT',
                       'PAVEMENT DESIGN':'PAVEMENT ANALYSIS DESIGN',
-                      'PHYSICS - I':'PHYSICS',
-                      'PHYSICS I':'PHYSICS',
+                      'PHYSICS - I':'PHYSICS I','PHYSICS':'PHYSICS I',
                       'PROJECT PLANNING MANAGEMENT':'PROJECT PLANNING AND MANAGEMENT',
                       'PSYCHOLOGY AND HRM':'PSYCHOLOGY HRM',
-                      'SPORTS YOGA/ LIBRARY/ NCC':'SPORTS/YOGA/LIBRARY/NCC',
-                      'SPORTS YOGA LIBRARY NCC':'SPORTS/YOGA/LIBRARY/NCC',
+                      'SPORTS YOGA/ LIBRARY/ NCC':'SPORTS','SPORTS YOGA LIBRARY NCC':'SPORTS',
+                      'SPORTS/YOGA/LIBRARY/NCC':'SPORTS',
                       'STRUCTURAL ANALYSIS LABORATORY':'STRUCTURAL ANALYSIS LAB',
-                      'SURVEYING - I':'SURVEYING I'}
-
+                      'SURVEYING - I':'SURVEYING I',
+					  'RELIABLITY AND MAINTENANCE ENGINEERING':'RELIABILITY AND MAINTENANCE ENGINEERING',
+					  'PROJECT PHASE-I':'PROJECT PHASE I','PROJECT PHASE - I':'PROJECT PHASE I',
+					  'PROJECT PHASE-II':'PROJECT PHASE II','PROJECT PHASE - II':'PROJECT PHASE II',
+                      'ADV. I. C. ENGINE':'ADVANCED IC ENGINE',
+                      'APPLICATION':'APPLICATIONS',
+                      'CHARACTERISATION OF MATERIAL':'CHARACTERISATION OF MATERIALS',
+                      'CHEMICAL REACTION ENGINEERING-I':'CHEMICAL REACTION ENGINEERING',
+                      'COMPUTER ORGANISATION':'COMPUTER ORGANIZATION',
+                      'CONCEPTS IN PROGARMMING LANGUAGES':'CONCEPTS IN PROGRAMMING LANGUAGES',
+                      'CONTROL SYSTEM - I':'CONTROL SYSTEM I','CONTROL SYSTEM':'CONTROL SYSTEM I','CONTROL SYSTEM':'CONTROL SYSTEM I',
+                      'CONTROL SYSTEM - I LAB':'CONTROL SYSTEM I LAB','CONTROL SYSTEMS - I LAB':'CONTROL SYSTEM I LAB',
+                      'CONTROL SYSTEM - II':'CONTROL SYSTEM II','CONTROL SYSTEM - II LAB':'CONTROL SYSTEM II LAB',
+                      'DATA MINING DATA WEARHOUSING':'DATA MINING AND DATA WEARHOUSING',
+                      'DATA STRUCTURES PROGRAM DESIGN':'DATA STRUCTURES AND PROGRAM DESIGN - I','DATA STRUCTURES AND PROGRAM DESIGN':'DATA STRUCTURES AND PROGRAM DESIGN - I',
+                      'DATA STRUCTURES PROGRAM DESIGN II':'DATA STRUCTURES AND PROGRAM DESIGN - II','DATA STRUCTURES AND PROGAME DESIGN - II':'DATA STRUCTURES AND PROGRAM DESIGN - II',
+                      'DIGITAL CIRCUITS LOGIC DESIGN':'DIGITAL CIRCUITS AND LOGIC DESIGN',
+                      'DISCRETE MATHS GRAPH THEORY':'DISCRETE MATHS AND GRAPH THEORY',
+                      'ELECTRICAL MACHINE-I':'ELECTRICAL MACHINE I','ELECTRICAL MACHINES-I':'ELECTRICAL MACHINE I',
+                      'ELECTRICAL MACHINE-II':'ELECTRICAL MACHINE II','ELECTRICAL MACHINES I LAB':'ELECTRICAL MACHINE I LAB',
+                      'ELECTRICAL POWER SYSTEM-I':'ELECTRICAL POWER SYSTEM I','ELECTRICAL POWER SYSTEM - II':'ELECTRICAL POWER SYSTEM II',
+                      'ELECTRONIC PRODUCT ENGG W/S':'ELECTRONIC PRODUCT ENGG. WORKSHOP',
+                      'ELECTRONICS DEVICE AND CIRCUITS':'ELECTRONICS DEVICES AND CIRCUITS','ELECTRONICS DEVICE AND CIRCUITS LAB':'ELECTRONICS DEVICES AND CIRCUITS LAB',
+                      'ELECTRONIC DEVICES CIRCUITS':'ELECTRONIC DEVICES AND CIRCUITS','ELECTRONICS DEVICE CIRCUITS LAB':'ELECTRONICS DEVICES AND CIRCUITS LAB',
+                      'ELECTRONICS DEVICE CIRCUITS LAB':'ELECTRONICS DEVICES AND CIRCUITS LAB','ENERGY CONVERSION - I':'ENERGY CONVERSION I',
+                      'ENERGY CONVERSION- II':'ENERGY CONVERSION II','ENERGY CONVERSION- II LAB':'ENERGY CONVERSION II LAB',
+                      'ENGINEERING METALLUGY LAB':'ENGINEERING METALLURGY LAB',
+                      'ENVIRONMENTAL ENGINEERING-I':'ENVIRONMENTAL ENGINEERING I','ENVIRONMENTAL ENGINEERING':'ENVIRONMENTAL ENGINEERING I',
+                      'GEOLOGY - I':'GEOLOGY I','GEOLOGY - II':'GEOLOGY II',
+                      'GRAPHICS BASIC DESIGN':'GRAPHICS AND BASIC DESIGN',
+                      'HEAT TRANSFER':'HEAT TRANSFER I','HEAT TRANSFER-II':'HEAT TRANSFER II',
+                      'INTRODUCTION TO MINE TECHNOLOGY':'INTRODUCTION TO MINING TECHNOLOGY',
+                      'LINEAR ELECTRONIC CIRCUIT':'LINEAR ELECTRONIC CIRCUITS','LINEAR ELECTRONIC CIRCUIT LAB':'LINEAR ELECTRONIC CIRCUITS LAB',
+                      'MACHINE DESIGN - I':'MACHINE DESIGN I','MACHINE DESIGN - II':'MACHINE DESIGN II','MACHINE DESIGN -II':'MACHINE DESIGN II',
+                      'MANUFACTURING PROCESS - II':'MANUFACTURING PROCESS II',
+                      'MANUFACTURING PROCESS AUTOMATION':'MANUFACTURING PROCESSES AUTOMATION',
+                      'MASS TRANSFER':'MASS TRANSFER I','MASS TRANSFER - I':'MASS TRANSFER I','MASS TRANSFER - II':'MASS TRANSFER II',
+                      'MATHEMATICS - II':'MATHEMATICS II',
+                      'MEASUREMENT INSTRUMENTATION':'MEASUREMENT AND INSTRUMENTATION','MEASUREMENT INSTRUMENTATION LAB':'MEASUREMENT AND INSTRUMENTATION LAB',
+                      'MECHANICAL OPERATION':'MECHANICAL OPERATIONS',
+                      'MICROPROCESSORS-BASED SYSTEMS':'MICROPROCESSORS BASED SYSTEMS','MICROPROCESSOR BASED SYSTEMS':'MICROPROCESSORS BASED SYSTEMS',
+                      'MINE SURVEYING - II':'MINE SURVEYING II','MINE VENTILATION CLIMATE ENGINEERING':'MINE VENTILATION AND CLIMATE ENGINEERING',
+                      'MINING MACHINERY- II':'MINING MACHINERY II',
+                      'NEUROFUZZY TECHNIQUES':'NEURO FUZZY TECHNIQUES',
+                      'NON DISTRUCTIVE TESTING':'NON DESTRUCTIVE TESTING',
+                      'OPERATING SYSTEM':'OPERATING SYSTEMS','OPERATION RESEARCH':'OPERATIONS RESEARCH',
+                      'OVERVIEW OF COMM. SYSTEMS':'OVERVIEW OF COMMUNICATION SYSTEMS',
+                      'PETROLEUM REFINERY ENGINEERING':'PETROLIUM REFINERY ENGINEERING',
+                      'PHYSICS - III':'PHYSICS III','PHYSICS':'PHYSICS I',
+                      'PSYCHOLOGY ED':'PSYCHOLOGY AND ED','PSYCHOLOGY E.D.':'PSYCHOLOGY AND ED',
+                      'RADIO FREQUENCY CIRCUIT DESIGN LAB.':'RADIO FREQUENCY CIRCUIT DESIGN LAB',
+                      'REFRIGERATION CRYOGENICS':'REFRIGERATION AND CRYOGENICS',
+                      'REMOTE SENSING GIS':'REMOTE SENSING AND GIS',
+                      'SAFETY AND RISK ANALYSIS':'SAFETY RISK ANALYSIS',
+                      'SECONDARY SPECIAL STEEL MAKING':'SECONDARY AND SPECIAL STEEL MAKING',
+                      'SIGNALS SYSTEMS':'SIGNALS AND SYSTEMS',
+                      'SOFTWARE LAB - I':'SOFTWARE LAB I','SOFTWARE LAB - II':'SOFTWARE LAB II',
+                      'STRUCTURAL DESIGN - II':'STRUCTURAL DESIGN II',
+                      'SWITCHGEAR AND PROTECTION STUDY\)':'SWITCHGEAR AND PROTECTION',
+                      'THEORY OF MACHINE - I':'THEORY OF MACHINE I','THEORY OF MACHINES - I':'THEORY OF MACHINE I',
+                      'TRANSPORT PHENOMENON':'TRANSPORT PHENOMENA',
+                      'SURVERYING':'SURVEYING',
+                      'ADVANCE BUILDING MATERIALS':'ADVANCED BUILDING MATERIALS',
+                      'CONTEMPORARY DESIGN THEORY CRITISISM':'CONTEMPORARY DESIGN THEORY CRITICISM'}
 
 def PDF_Parser(file):
 
-    global database, course_data
+    global database, course_data, department_data
 
     def is_no_of_credit(char):
         try:
@@ -177,7 +218,7 @@ def PDF_Parser(file):
         prettified = name
         if prettified[-1] == '\xa0':
             prettified = prettified[:-1]
-        if prettified[-1] == 'Â':
+        if prettified[-1] in ('Â',chr(194)):
             prettified = prettified[:-1]
         return prettified
 
@@ -185,6 +226,8 @@ def PDF_Parser(file):
         # Classifying the student based on his Roll type...
         if roll[:2] == 'BT':
             cur_stud_type = 'B. Tech.'
+        elif roll[:2] in ('BA','AR'):
+            cur_stud_type = 'B. Arch.'
         elif roll[:2] == 'MT':
             cur_stud_type = 'M. Tech.'
         elif roll[0] in ['L','N','R','S','T','U','V','W','X','Y','Z']:
@@ -199,28 +242,37 @@ def PDF_Parser(file):
         return cur_stud_type
 
     def get_batch(roll,stud_type):
-        if stud_type == 'First Year B. Tech.':
-            return latest_term[0][-4:]
+        if stud_type == 'First Year B. Tech.' or roll[:2] == 'AR':
+            if latest_terms[0][0] == "S":
+                batch = str(int(latest_terms[0][-4:])-1)
+            else:
+                batch = latest_terms[0][:4]
         else:
-            return roll[:4]
+            batch = roll[:4]
+        return batch
 
     def individual():
-        all_details = {'Branch':None,'CGPA':0,'Credits Total':0,'EGP Total':0,'W':False,'FF':False}
+        all_details = {'Branch':None,'CGPA':0,'Credits_Total':0,'EGP_Total':0,'W':0,'FF':0}
         cur_line = file.readline()
         cur_name = getdata(file.readline())
+        if cur_name == "GRADE CARD":
+            return
         cur_roll = getdata(file.readline())
         cur_stud_type = get_stud_type(cur_roll)
         # Trashing out unrequired data...
         for i in range(5):
             file.readline()
-        cur_branch = getdata(file.readline())
+        cur_branch = getdata(file.readline()).replace('&','AND')
         cur_name = prettify_name(cur_name)
+        cur_batch = get_batch(cur_roll,cur_stud_type)
         all_details['Name'] = cur_name
         all_details['Roll'] = cur_roll
         all_details['Stud Type'] = cur_stud_type
         all_details['Branch'] = cur_branch
-        all_details['Batch'] = get_batch(cur_roll,cur_stud_type)
+        all_details['Batch'] = cur_batch
         all_details['Records'] = {}
+        if cur_roll in database:
+            all_details = database[cur_roll]
         good_to_go = True
         #if cur_stud_type in ('Super Senior','Dont Know'):
         #    good_to_go = False
@@ -231,6 +283,11 @@ def PDF_Parser(file):
                     cur_term = cur_data
                     if cur_term[-1] == ' ':
                         cur_term = cur_term[:-1]
+                    cur_term = cur_term.split()
+                    if 'AUTUMN'in cur_term:
+                        cur_term[cur_term.index('AUTUMN')] = 'WINTER'
+                    cur_term.reverse()
+                    cur_term = ' '.join(cur_term)
                     all_details['Records'][cur_term] = {'CGPA':0,'SGPA':0,'Courses':{}}
                     cur_block = []
                     while not cur_data == "Credit":
@@ -238,72 +295,95 @@ def PDF_Parser(file):
                         cur_data = getdata(cur_line)
                         cur_block.append(cur_data)
                         if cur_data in grades and is_no_of_credit(cur_block[-2]):
-                            no_credits = is_no_of_credit(cur_block[-2])
+                            cur_grade = grades[cur_data]
+                            cur_grade_raw = cur_data
+                            cur_line = file.readline()
+                            cur_data = getdata(cur_line)
+                            cur_block.append(cur_data)
+                            course = cur_block[-4]
+                            if cur_block[-3][:2] == '\(':
+                                del cur_block[-3]
+                            no_credits = is_no_of_credit(cur_block[-3])
                             if no_credits == 10:
                                 no_credits = 0
-                            course = cur_block[-3]
+                            serial = cur_block[-1]
                             if course[0] == '\\':
-                                course = cur_block[-4]
-                            course = prettify(course)
-                            cur_grade = grades[cur_data]
+                                course = cur_block[-5]
+                                if cur_block[-4][:2] == '\(':
+                                    del cur_block[-4]
+                                    course_credits = cur_block[-3]
+                                    serial = cur_block[-1]
+                                else:
+                                    course_credits = cur_block[-4]
+                                    serial = cur_block[-2]
+                            course_raw = course
+                            course_name = prettify(course)
+                            course = serial
                             cur_block = []
                             good_to_add = True
                             # Fuck Super Senior Data
-                            if int(cur_term[-4:]) <= 2008:
+                            if int(cur_term[:4]) <= 2009:
                                 good_to_add = False
-                            elif int(cur_term[-4:]) == 2009 and not cur_term in ('RE-EXAM AUTUMN 2009','AUTUMN 2009'):
+                            elif int(cur_term[:4]) == 2009 and not cur_term in ('2009 AUTUMN RE-EXAM','2009 AUTUMN'):
                                 good_to_add = False
                             if good_to_add:
                                 # First adding the data to course_database
-                                if course in course_data:
-                                    file.readline()
+                                if serial in course_data:
+                                    if not cur_branch in course_data[course]['Branches']:
+                                        course_data[course]['Branches'].append(cur_branch)
                                     if cur_term in course_data[course]['Records']:
                                         course_data[course]['Records'][cur_term][cur_roll] = cur_grade
                                     else:
                                         course_data[course]['Records'][cur_term] = {}
                                         course_data[course]['Records'][cur_term][cur_roll] = cur_grade
+                                    course_data[course]['Students'] += 1
                                 else:
-                                    serial = getdata(file.readline())
-                                    course_data[course] = {'Serial':serial,'Records':{}}
+                                    course_data[course] = {'Name':course_name,'Records':{},'Branches':[cur_branch],'Credits':no_credits, 'W':0, 'FF':0, 'Students':1}
                                     course_data[course]['Records'][cur_term] = {}
                                     course_data[course]['Records'][cur_term][cur_roll] = cur_grade
 
-                            # Now adding stuff to the student's database
-                            if cur_grade == 'W':
-                                all_details['W'] = True
-                            elif cur_grade == 'FF':
-                                all_details['FF'] = True
-                            all_details['Records'][cur_term]['Courses'][course] = cur_grade
+                                # Now adding stuff to the student's database
+                                if cur_grade_raw == 'W':
+                                    all_details['W'] += 1
+                                    course_data[course]['W'] += 1
+                                elif cur_grade_raw == 'FF':
+                                    all_details['FF'] += 1
+                                    course_data[course]['FF'] += 1
+                                all_details['Records'][cur_term]['Courses'][serial] = cur_grade
 
                     if is_gpa(cur_block[-2]) and not len(cur_block) < 7:
                         cgpa_sem = is_gpa(cur_block[-2])
                         egp_tot = float(cur_block[-3])
                         creds_tot = float(cur_block[-4])
                         sgpa_sem = is_gpa(cur_block[-5])
-                        #egp_sem = float(cur_block[-6])
+                        if cur_block[-6].find('.') > -1:
+                            egp_sem = float(cur_block[-6])
+                        else:
+                            egp_sem = 0
                         #creds_sem = float(cur_block[-7])
                         all_details['Records'][cur_term]['CGPA'] = cgpa_sem
                         all_details['Records'][cur_term]['SGPA'] = sgpa_sem
-                        #all_details['Records'][cur_term]['EGP'] = egp_sem
+                        all_details['Records'][cur_term]['EGP'] = egp_sem
                         #all_details['Records'][cur_term]['Credits Earned'] = creds_sem
-                        all_details['Records'][cur_term]['EGP Total'] = egp_tot
-                        all_details['Records'][cur_term]['Credits Total'] = creds_tot
-                        if cur_term == latest_term[0]:
+                        all_details['Records'][cur_term]['EGP_Total'] = egp_tot
+                        all_details['Records'][cur_term]['Credits_Total'] = creds_tot
+                        if cur_term in latest_terms:
                             all_details['CGPA'] = cgpa_sem
-                            all_details['Credits Total'] = creds_tot
-                            all_details['EGP Total'] = egp_tot
-                        elif cur_term == latest_term[1]:
-                            all_details['CGPA'] = cgpa_sem
-                            all_details['Credits Total'] = creds_tot
-                            all_details['EGP Total'] = egp_tot
+                            all_details['Credits_Total'] = creds_tot
+                            all_details['EGP_Total'] = egp_tot
 
             if cur_line == "endstream"+chr(10):
-                if cur_roll not in database:
-                    database[cur_roll] = all_details
-                else: # Requirement for the pro 2 page long grade cards of VIPs
-                    for each_term in database[cur_roll]['Records']:
-                        all_details['Records'][each_term] = database[cur_roll]['Records'][each_term]
-                    database[cur_roll] = all_details
+                database[cur_roll] = all_details
+                cur_cg = all_details['CGPA']
+                if not cur_branch:
+                    print(all_details['Roll'],all_details['Name'])
+                if cur_branch in department_data:
+                    if cur_batch in department_data[cur_branch]:
+                        department_data[cur_branch][cur_batch][cur_roll] = cur_cg
+                    else:
+                        department_data[cur_branch][cur_batch] = {cur_roll:cur_cg}
+                else:
+                    department_data[cur_branch] = {cur_batch:{cur_roll:cur_cg}}
                 break
             cur_line = file.readline()
 
@@ -319,41 +399,28 @@ def PDF_Parser(file):
 
 
 # Analysis shit! :-P  -->
+
 class Analyser:
-    def All_Courses(printify=True, serial = False, terms = False, alphabetically = False):
+    def All_Courses(self,serial=True, terms=True, alphabetically = True):
         data = []
-        if not printify:
-            to_return = course_data.keys()
-            if alphabetically:
-                return sorted(to_return)
-            return to_return
         for each in course_data:
-            to_print = each
+            to_print = str(each)
             if serial:
-                to_print += ' || Serial - ' + course_data[each]['Serial']
+                to_print += ' || Serial - ' + str(course_data[each]['Serial'])
             if terms:
                 course_terms = list(course_data[each]['Records'].keys())
                 to_print += ' || Terms - ' + str(course_terms)
-            if not alphabetically:
-                print(to_print,'\n')
-            else:
-                data.append(to_print)
+            data.append(to_print)
         if alphabetically:
             data.sort()
-            for course in data: print(course)
-
-    def Individual_Record(roll,term=None,printify=False):
+        return data
+    def Individual_Record(self,roll,term=None):
         if roll in database:
             if not term:
-                if printify:
-                    print(database[roll])
                 return database[roll]
             else:
-                if printify:
-                    print(database[roll]['Records'][term])
                 return database[roll]['Records'][term]
-
-    def Make_Marklist(course=False,course_term=None,branch=None,batch=None,term=latest_term[0],cg=False,sg=False,names=False):
+    def Make_Marklist(self,course=False,course_term=None,branch=None,batch=None,term=latest_terms[0],cg=False,sg=False,names=False):
         mark_list = []
         if course and course in course_data:
             if course_term and course_term in course_data[course]['Records']:
@@ -361,14 +428,17 @@ class Analyser:
                     mark_list.append(course_data[course]['Records'][course_term][rolls])
                 return mark_list
             else:
+                big_list = []
                 for course_term in course_data[course]['Records']:
+                    mark_list.append(course_term)
                     for rolls in course_data[course]['Records'][course_term]:
                         if names:
                             mark_list.append((course_data[course]['Records'][course_term][rolls],rolls))
                         else:
                             mark_list.append(course_data[course]['Records'][course_term][rolls])
-                return mark_list
-
+                    big_list.append(mark_list)
+                    mark_list = []
+                return big_list
         elif cg:
             for roll in database:
                 cur_cg = database[roll]['CGPA']
@@ -386,7 +456,6 @@ class Analyser:
                     else:
                         mark_list.append(cur_cg)
             return mark_list
-
         elif sg:
             for roll in database:
                 should_add = True
@@ -408,8 +477,7 @@ class Analyser:
                             break
             return mark_list
         return [] # If the input was wrong, we dont want to return None.
-
-    def Mean_Deviation(marklist, printify = False): # Takes marks, outputs mean & std deviation
+    def Mean_Deviation(self,marklist): # Takes marks, outputs mean & std deviation
         if len(marklist) > 0:
             if not isinstance(marklist[0],tuple):
                 total = sum(marklist)
@@ -429,8 +497,6 @@ class Analyser:
                         devn += (mean - each)**2
                 if N:
                     devn = (devn/N)**0.5
-                if printify:
-                    print("\n\tMean -",mean,"|| Deviation -",devn,"|| Fail -",fail)
                 return mean, devn, fail
             else:
                 total = 0
@@ -451,41 +517,30 @@ class Analyser:
                         devn += (mean - each[0])**2
                 if N:
                     devn = (devn/N)**0.5
-                if printify:
-                    print("\n\tMean -",mean,"|| Deviation -",devn,"|| Fail -",fail)
                 return mean, devn, fail
-
-    def Gradify(marklist, printify = False,cumulative=False):
-        categories = [['F',0],[10,0],[9,0],[8,0],[7,0],[6,0],[5,0],[4,0]]
+    def Gradify(self,marklist,percent=True,cumulative=False):
+        categories = [[10,0],[9,0],[8,0],[7,0],[6,0],[5,0],[4,0]]#,['F',0]]
         if cumulative:
-            categories = [['F',0],[4,0],[5,0],[6,0],[7,0],[8,0],[9,0],[10,0]]
+            categories = [[4,0],[5,0],[6,0],[7,0],[8,0],[9,0],[10,0]]#,['F',0]]
         for mark in marklist:
             if isinstance(mark,tuple):
                 mark = mark[0]
-            if mark == 0:
-                categories[0][1] += 1
-            for i in range(1,len(categories)):
+            #if mark == 0:
+            #    categories[7][1] += 1
+            for i in range(len(categories)-1):
                 if mark >= categories[i][0]:
                     categories[i][1] += 1
                     if not cumulative:
                         break
-        if printify:
-            print("\n\tGrade Distribution -")
+        if percent:
+            total = len(marklist)
             for i in range(len(categories)):
-                print("\t{0} - {1}".format(categories[i][0],categories[i][1]))
-            return True
+                categories[i][1] = categories[i][1]*100/total
         return categories
-
-    def Ranking(marklist, printify=True):
-        if printify:
-            print()
+    def Ranking(self,marklist):
         if marklist:
             if not isinstance(marklist[0],tuple):
-                if not printify:
-                    return sorted(marklist,reverse=True)
-                else:
-                    for index, mark in enumerate(sorted(marklist,reverse=True)):
-                        print('\t{rank} - {mark}'.format(rank=index+1,mark=mark))
+                return sorted(marklist,reverse=True)
             else:
                 data_dict = {}
                 marks_list = []
@@ -500,12 +555,53 @@ class Analyser:
                 for mark in sorted(marks_list,reverse=True):
                     cur_data = sorted(data_dict[mark])
                     to_return.append((len(to_return)+1,cur_data))
-                    if printify:
-                        for name in cur_data:
-                            print('\t{rank} - {name} ({mark})'.format(rank=len(to_return),name=name,mark=mark))
                 return to_return
+    def Course_Performance(self,course,exclude_re=True,percent=True,cumulative=False):
+        # Need terms & their graded data.
+        poss_grades = [10,9,8,7,6,5,4,'F']
+        big_list = self.Make_Marklist(course)
+        big_list.sort(key=(lambda k: k[0]))
+        graded_list = []
+        course_terms = []
+        for each in big_list:
+            if exclude_re and each[0][-1] == 'M':
+                continue
+            course_terms.append(each[0].encode('ascii','ignore'))
+            graded_list.append(self.Gradify(each[1:],percent,cumulative))
+        assert len(course_terms) == len(graded_list)
+        to_return = [course_terms,[]]
+        for i in range(len(poss_grades)):
+            cur = {}
+            cur['name'] = str(poss_grades[i])
+            cur['data'] = []
+            for k in range(len(graded_list)):
+                cur['data'].append(graded_list[k][i][1])
+            to_return[1].append(cur)
+        return to_return
+    def Student_Performance(self,roll,egp=True):
+        # Need terms, egps, term-wise course grades
+        to_return, terms, term_data = [], [], []
+        stud_data = database[roll]
+        for term in sorted(stud_data['Records'].keys()):
+            cur_data = {}
+            if egp:
+                cur_data['egp'] = stud_data['Records'][term]['EGP']
+            else:
+                cur_data['sg'] = stud_data['Records'][term]['SGPA']
+            cur_data['courses'], cur_data['data'] = [], []
+            cur_data['name'] = term.encode('ascii','ignore')
+            for course in stud_data['Records'][term]['Courses']:
+                cur_data['courses'].append((course_data[course]['Name']+' ('+course+')').encode('ascii','ignore'))
+                cur_data['data'].append(stud_data['Records'][term]['Courses'][course])
+            term_data.append(cur_data)
+            terms.append(cur_data['name'])
+        for i in range(len(term_data)):
+            term_data[i]['color'] = i
+        to_return.append(terms)
+        to_return.append(term_data)
+        return to_return
 
-    # End of Analyser...
+    # End of Analyser
 
 
 # The main() caller... Finally :)
